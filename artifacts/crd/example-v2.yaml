@@ -1,0 +1,8 @@
+apiVersion: samplecontroller.k8s.io/v2
+kind: Foo
+metadata:
+  name: example-foo-v2
+spec:
+  deploymentName: example-foo-v2
+  replicas: 1
+  convertSpec: "int value"
