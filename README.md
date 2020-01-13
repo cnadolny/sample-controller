@@ -14,11 +14,13 @@ kubectl create -f artifacts/deploy
 ```
 
 # logs
+```
 kubectl get po
 kubectl logs <pod name>
 
 kubectl create -f artifacts/crd/example-v1.yaml
 kubectl logs <pod name>
+```
 
 log output
 ```
@@ -32,7 +34,7 @@ I0113 22:46:17.041274       1 controller.go:129]
 {{ } {example-foo  default /apis/samplecontroller.k8s.io/v1alpha1/namespaces/default/foos/example-foo 825996b4-3656-11ea-b081-e291c83199d7 1723743 1 2020-01-13 22:46:17 +0000 UTC <nil> <nil> map[] map[] [] []  []} {example-foo 0xc000045020 0} {0}}
 ```
 
-kubectl create -f artifcats/crd/example-v2.yaml
+kubectl create -f artifacts/crd/example-v2.yaml
 ```
 W0113 22:47:06.402394       1 reflector.go:340] pkg/mod/k8s.io/client-go@v0.0.0-20200111153838-ea0a6e11838c/tools/cache/reflector.go:108: watch of *v2.Foo ended with: an error on the server ("unable to decode an event from the watch stream: unable to decode watch event: v1alpha1.Foo.Spec: v1alpha1.FooSpec.ConvertSpec: readUint64: unexpected character: \xff, error found in #10 byte of ...|ertSpec\":\"int value\"|..., bigger context ...|6-11ea-b081-e291c83199d7\"},\"spec\":{\"convertSpec\":\"int value\",\"deploymentName\":\"example-foo-v2\",\"repl|...") has prevented the request from succeeding
 ...
@@ -44,9 +46,11 @@ map[apiVersion:samplecontroller.k8s.io/v2 items:[map[apiVersion:samplecontroller
 ```
 
 # view JSON objects stored in kubernetes
+```
 kubectl proxy --port=8080 &
 curl http://localhost:8080/apis/samplecontroller.k8s.io/v1alpha1/foos
 curl http://localhost:8080/apis/samplecontroller.k8s.io/v2/foos
+```
 
 expected output, notice the differences in spec.convertSpec
 ```
