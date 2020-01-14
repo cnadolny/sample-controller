@@ -14,66 +14,67 @@ kubectl create -f artifacts/deploy
 ```
 
 # logs
+
+This CRD will attempt to demonstrate the issue of listing deployed CRDs with schema changes in multiple versions.
+
+Create the V1 CRD:
 ```
 kubectl get po
 kubectl logs <pod name>
 
 kubectl create -f artifacts/crd/example-v1.yaml
-kubectl logs <pod name>
 ```
 
-log output
+Run `kubectl logs <pod name>`, which will output a few fields from the JSON that is stored within Kubernetes, as well as results from listing the objects from the Informer.
 ```
- result V1: %v
-map[apiVersion:samplecontroller.k8s.io/v1alpha1 items:[map[apiVersion:samplecontroller.k8s.io/v1alpha1 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:46:17Z generation:1 name:example-foo namespace:default resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v1alpha1/namespaces/default/foos/example-foo uid:825996b4-3656-11ea-b081-e291c83199d7] spec:map
-[convertSpec:0 deploymentName:example-foo replicas:1]]] kind:FooList metadata:map[continue: resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v1alpha1/foos]]
-I0113 22:46:17.041225       1 controller.go:114]
- result V2: %v
-
-map[apiVersion:samplecontroller.k8s.io/v2 items:[map[apiVersion:samplecontroller.k8s.io/v2 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:46:17Z generation:1 name:example-foo namespace:default resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v2/namespaces/default/foos/example-foo uid:825996b4-3656-11ea-b081-e291c83199d7] spec:map[convertSpec:0 
-deploymentName:example-foo replicas:1]]] kind:FooList metadata:map[continue: resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v2/foos]]
-
-I0113 22:46:17.041274       1 controller.go:129]
-
- Listing foo V1 object, %v
-
-{{ } {example-foo  default /apis/samplecontroller.k8s.io/v1alpha1/namespaces/default/foos/example-foo 
-825996b4-3656-11ea-b081-e291c83199d7 1723743 1 2020-01-13 22:46:17 +0000 UTC <nil> <nil> map[] map[] [] []  []} {example-foo 
-0xc000045020 0} {0}}
+Printing V1 JSON
+-----------------
+samplecontroller.k8s.io/v1alpha1
+example-foo
+map[convertSpec:0 deploymentName:example-foo replicas:1]
+-----------------
+Printing V2 JSON
+-----------------
+samplecontroller.k8s.io/v2
+example-foo
+map[convertSpec:0 deploymentName:example-foo replicas:1]
+-----------------
+I0114 00:39:42.362080       1 controller.go:139]
+ Listing foo V1 objectexample-foo{example-foo 0xc000285d30 0}
 ```
 
-kubectl create -f artifacts/crd/example-v2.yaml
-```
-W0113 22:47:06.402394       1 reflector.go:340] pkg/mod/k8s.io/client-go@v0.0.0-20200111153838-ea0a6e11838c/tools/cache reflector.go:108: watch of *v2.Foo ended with: an error on the server 
-("unable to decode an event from the watch stream: unable to decode watch event: v1alpha1.Foo.Spec: v1alpha1.FooSpec.ConvertSpec: readUint64: unexpected character: \xff, error found in #10 byte of ...|ertSpec\":\"int value\"|..., bigger context ...|
-6-11ea-b081-e291c83199d7\"},\"spec\":{\"convertSpec\":\"int value\",\"deploymentName\":\"example-foo-v2\",\"repl|...") has prevented the request from succeeding
-...
- result V1: %v
+Next, we'll apply the second YAML, which has the V2 version of the CRD. The V2 version changes the field convertSpec from an int to a string.
 
-map[apiVersion:samplecontroller.k8s.io/v1alpha1 items:[map[apiVersion:samplecontroller.k8s.io/v1alpha1 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:46:17Z generation:1 name:example-foo namespace:default resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v1alpha1/namespaces/default/foos/example-foo uid:825996b4-3656-11ea-b081-e291c83199d7] spec:map
-[convertSpec:0 deploymentName:example-foo replicas:1]] map[apiVersion:samplecontroller.k8s.io/v1alpha1 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:47:06Z generation:1 name:example-foo-v2 namespace:default resourceVersion:1723872 selfLink:/apis/
-samplecontroller.k8s.io/v1alpha1/namespaces/default/foos/example-foo-v2 uid:9fc39e76-3656-11ea-b081-e291c83199d7] spec:map
-[convertSpec:int value deploymentName:example-foo-v2 replicas:1]]] kind:FooList metadata:map[continue: resourceVersion:1723874 
-selfLink:/apis/samplecontroller.k8s.io/v1alpha1/foos]]
-I0113 22:47:07.415989       1 controller.go:114]
- result V2: %v
-map[apiVersion:samplecontroller.k8s.io/v2 items:[map[apiVersion:samplecontroller.k8s.io/v2 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:46:17Z generation:1 name:example-foo namespace:default resourceVersion:1723743 selfLink:/apis/
-samplecontroller.k8s.io/v2/namespaces/default/foos/example-foo uid:825996b4-3656-11ea-b081-e291c83199d7] spec:map[convertSpec:0 
-deploymentName:example-foo replicas:1]] map[apiVersion:samplecontroller.k8s.io/v2 kind:Foo metadata:map
-[creationTimestamp:2020-01-13T22:47:06Z generation:1 name:example-foo-v2 namespace:default resourceVersion:1723872 selfLink:/apis/
-samplecontroller.k8s.io/v2/namespaces/default/foos/example-foo-v2 uid:9fc39e76-3656-11ea-b081-e291c83199d7] spec:map
-[convertSpec:int value deploymentName:example-foo-v2 replicas:1]]] kind:FooList metadata:map[continue: resourceVersion:1723874 selfLink:/apis/samplecontroller.k8s.io/v2/foos]]
+`kubectl create -f artifacts/crd/example-v2.yaml`
 ```
+W0114 00:41:37.853093       1 reflector.go:340] pkg/mod/k8s.io/client-go@v0.0.0-20200111153838-ea0a6e11838c/tools/cache/
+reflector.go:108: watch of *v2.Foo ended with: an error on the server ("unable to decode an event from the watch stream: unable to 
+decode watch event: v1alpha1.Foo.Spec: v1alpha1.FooSpec.ConvertSpec: readUint64: unexpected character: \xff, error found in #10 
+byte of ...|ertSpec\":\"int value\"|..., bigger context ...|6-11ea-b081-e291c83199d7\"},\"spec\":{\"convertSpec\":\"int value\",
+\"deploymentName\":\"example-foo-v2\",\"repl|...") has prevented the request from succeeding
+
+Printing V1 JSON
+-----------------
+samplecontroller.k8s.io/v1alpha1
+example-foo
+map[convertSpec:0 deploymentName:example-foo replicas:1]
+samplecontroller.k8s.io/v1alpha1
+example-foo-v2
+map[convertSpec:int value deploymentName:example-foo-v2 replicas:1]
+
+Printing V2 JSON
+-----------------
+samplecontroller.k8s.io/v2
+example-foo
+map[convertSpec:0 deploymentName:example-foo replicas:1]
+samplecontroller.k8s.io/v2
+example-foo-v2
+map[convertSpec:int value deploymentName:example-foo-v2 replicas:1]
+I0114 00:41:37.858927       1 controller.go:139]
+ Listing foo V1 objectexample-foo{example-foo 0xc0000a9340 0}
+```
+
+Here we can see that both objects are stored in both versions, and the ListWatcher failed to list the V2 object.
 
 # view JSON objects stored in kubernetes
 ```

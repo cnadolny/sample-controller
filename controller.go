@@ -92,7 +92,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 		case <-stopCh:
 			return nil
 		case event = <-c.eventChannel:
-			klog.Info("Received event: %v", event)
+			klog.Info("Received event: ", event)
 		}
 
 		var result map[string]interface{}
@@ -102,7 +102,13 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 		}
 
 		json.Unmarshal(data, &result)
-		klog.Info("\n result V1: %v \n", result)
+		fmt.Println("\nPrinting V1 JSON\n-----------------")
+		for _, v := range result["items"].([]interface{}) {
+			fmt.Println(v.(map[string]interface{})["apiVersion"])
+			fmt.Println(v.(map[string]interface{})["metadata"].(map[string]interface{})["name"])
+			fmt.Println(v.(map[string]interface{})["spec"])
+		}
+		fmt.Println("-----------------")
 
 		var result2 map[string]interface{}
 		datav2, err := c.restClient.Get().AbsPath("apis/samplecontroller.k8s.io/v2/foos").DoRaw()
@@ -110,8 +116,14 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 			klog.Fatalf("Error: %s", err.Error())
 		}
 
+		fmt.Println("\nPrinting V2 JSON\n-----------------")
 		json.Unmarshal(datav2, &result2)
-		klog.Info("\n result V2: %v \n", result2)
+		for _, v := range result2["items"].([]interface{}) {
+			fmt.Println(v.(map[string]interface{})["apiVersion"])
+			fmt.Println(v.(map[string]interface{})["metadata"].(map[string]interface{})["name"])
+			fmt.Println(v.(map[string]interface{})["spec"])
+		}
+		fmt.Println("-----------------\n")
 
 		// List foo objects from ListWatch V1
 		list := c.fooInformerV1.GetStore().List()
@@ -123,10 +135,10 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 					err := fmt.Errorf("could not cast %T to %s", foo, "foov2")
 					klog.Error(err)
 				} else {
-					klog.Info("\n Listing foo V2 object, %v \n", *o2)
+					klog.Info("\n Listing foo V2 object, ", *o2)
 				}
 			} else {
-				klog.Info("\n Listing foo V1 object, %v \n", *o)
+				klog.Info("\n Listing foo V1 object", o.Name, o.Spec)
 			}
 		}
 
@@ -140,10 +152,10 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 					err := fmt.Errorf("FooInformerV2: could not cast %T to %s", fooV2, "foov1")
 					klog.Error(err)
 				} else {
-					klog.Info("\n FooInformerV2: Listing foo V1 object, %v \n", *o2)
+					klog.Info("\n FooInformerV2: Listing foo V1 object, ", *o2)
 				}
 			} else {
-				klog.Info("\n FooInformerV2: Listing foo V2 object, %v \n", *o)
+				klog.Info("\n FooInformerV2: Listing foo V2 object", o.Name, o.Spec)
 			}
 		}
 	}
