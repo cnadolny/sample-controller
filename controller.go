@@ -11,11 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	rest "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/record"
 	"k8s.io/klog"
 
 	foov1 "github.com/cnadolny/sample-controller/pkg/apis/samplecontroller/v1alpha1"
@@ -40,7 +37,6 @@ type Controller struct {
 	fooInformerV2 cache.SharedInformer
 
 	restClient   *rest.RESTClient
-	recorder     record.EventRecorder
 	eventChannel chan EventType
 }
 
@@ -48,13 +44,6 @@ func NewController(
 	config *rest.Config,
 	kubeclientset kubernetes.Interface,
 	eventCh chan EventType) *Controller {
-
-	// utilruntime.Must(samplescheme.AddToScheme(scheme.Scheme))
-	klog.V(4).Info("Creating event broadcaster")
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(klog.Infof)
-	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: kubeclientset.CoreV1().Events("")})
-	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: controllerAgentName})
 
 	restClient, err := newRestClient(config)
 	if err != nil {
@@ -71,7 +60,6 @@ func NewController(
 	controller := &Controller{
 		restClient:    restClient,
 		kubeclientset: kubeclientset,
-		recorder:      recorder,
 		fooInformerV1: fooInformerv1,
 		fooInformerV2: fooInformerv2,
 		eventChannel:  eventCh,
@@ -81,8 +69,6 @@ func NewController(
 }
 
 func (c *Controller) Run(stopCh <-chan struct{}) error {
-	// defer utilruntime.HandleCrash()
-
 	go c.fooInformerV1.Run(stopCh)
 	go c.fooInformerV2.Run(stopCh)
 	var event EventType
@@ -133,12 +119,12 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 				o2, ok2 := foo.(*foov2.Foo)
 				if !ok2 {
 					err := fmt.Errorf("could not cast %T to %s", foo, "foov2")
-					klog.Error(err)
+					fmt.Println(err)
 				} else {
-					klog.Info("\n Listing foo V2 object, ", *o2)
+					fmt.Println("\n Listing foo V2 object, ", *o2)
 				}
 			} else {
-				klog.Info("\n Listing foo V1 object", o.Name, o.Spec)
+				fmt.Println("\n Listing foo V1 object", o.Name, o.Spec)
 			}
 		}
 
@@ -150,12 +136,12 @@ func (c *Controller) Run(stopCh <-chan struct{}) error {
 				o2, ok2 := fooV2.(*foov1.Foo)
 				if !ok2 {
 					err := fmt.Errorf("FooInformerV2: could not cast %T to %s", fooV2, "foov1")
-					klog.Error(err)
+					fmt.Println(err)
 				} else {
-					klog.Info("\n FooInformerV2: Listing foo V1 object, ", *o2)
+					fmt.Println("\n FooInformerV2: Listing foo V1 object, ", *o2)
 				}
 			} else {
-				klog.Info("\n FooInformerV2: Listing foo V2 object", o.Name, o.Spec)
+				fmt.Println("\n FooInformerV2: Listing foo V2 object", o.Name, o.Spec)
 			}
 		}
 	}
@@ -175,7 +161,6 @@ func newRestClient(config *rest.Config) (r *rest.RESTClient, err error) {
 	crdconfig.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{
 		CodecFactory: serializer.NewCodecFactory(s)}
 
-	//Client interacting with our CRDs
 	restClient, err := rest.RESTClientFor(&crdconfig)
 	if err != nil {
 		return nil, err

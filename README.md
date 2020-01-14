@@ -15,13 +15,10 @@ kubectl create -f artifacts/deploy
 
 # logs
 
-This CRD will attempt to demonstrate the issue of listing deployed CRDs with schema changes in multiple versions.
+This CRD will attempt to demonstrate the issue of listing deployed CRDs with schema changes in multiple versions. 
 
 Create the V1 CRD:
 ```
-kubectl get po
-kubectl logs <pod name>
-
 kubectl create -f artifacts/crd/example-v1.yaml
 ```
 
@@ -46,6 +43,7 @@ I0114 00:39:42.362080       1 controller.go:139]
 Next, we'll apply the second YAML, which has the V2 version of the CRD. The V2 version changes the field convertSpec from an int to a string.
 
 `kubectl create -f artifacts/crd/example-v2.yaml`
+`kubectl logs <pod-name>`
 ```
 W0114 00:41:37.853093       1 reflector.go:340] pkg/mod/k8s.io/client-go@v0.0.0-20200111153838-ea0a6e11838c/tools/cache/
 reflector.go:108: watch of *v2.Foo ended with: an error on the server ("unable to decode an event from the watch stream: unable to 
@@ -61,7 +59,7 @@ map[convertSpec:0 deploymentName:example-foo replicas:1]
 samplecontroller.k8s.io/v1alpha1
 example-foo-v2
 map[convertSpec:int value deploymentName:example-foo-v2 replicas:1]
-
+-----------------
 Printing V2 JSON
 -----------------
 samplecontroller.k8s.io/v2
@@ -70,11 +68,12 @@ map[convertSpec:0 deploymentName:example-foo replicas:1]
 samplecontroller.k8s.io/v2
 example-foo-v2
 map[convertSpec:int value deploymentName:example-foo-v2 replicas:1]
+-----------------
 I0114 00:41:37.858927       1 controller.go:139]
  Listing foo V1 objectexample-foo{example-foo 0xc0000a9340 0}
 ```
 
-Here we can see that both objects are stored in both versions, and the ListWatcher failed to list the V2 object.
+Here we can see that both objects are stored in both versions, and the ListWatcher failed to list the V2 object. We also only see errors from the V2 CRD object, because the restClient can only take only one type of CRD spec. In this example I gave it the v1 schema, thus the restClient is attempting to cast the JSON onto the V1 schema and showing the errors about mismatched type.
 
 # view JSON objects stored in kubernetes
 ```
